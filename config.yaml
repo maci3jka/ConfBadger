@@ -1,8 +1,4 @@
 ---
-size:
-  width-mm: 3175
-  height-mm: 4763
-
 attendee-types:
   - name: "Speaker"
     color: "211, 165, 255"
@@ -27,7 +23,7 @@ attendee-types:
       - "asd"
   - name: "Attendee"
     color: "159, 219, 255"
-    background-size: 200
+    background-size: 293
     ticket-titles:
       - "None"
       - "Monday"
@@ -41,30 +37,36 @@ attendee-types:
 data:
   - field: "First Name"
     font: "fonts/OpenSans-Bold.ttf"
-    size: 120
-    position: "180,450"
+    size: 300
+    position: "400,830"
     color: "20,206,219"
     style: "capitals"
   - field: "Last Name"
     font: "fonts/OpenSans-Bold.ttf"
-    size: 80
-    position: "180,620"
+    size: 150
+    position: "400,1220"
     color: "0,0,0"
-  - field: "Title"
-    font:  "fonts/OpenSans-Regular.ttf"
-    size: 60
-    position: "300,760"
-    color: "20,206,219"
+  # - field: "Title"
+  #   font:  "fonts/OpenSans-Regular.ttf"
+  #   size: 120
+  #   position: "600,1500"
+  #   color: "20,206,219"
+  # - field: "Company"
+  #   font: "fonts/OpenSans-Semibold.ttf"
+  #   size: 100
+  #   position: "600,1650"
+    # color: "0,134,255"
   - field: "Company"
     font: "fonts/OpenSans-Semibold.ttf"
-    size: 70
-    position: "300,820"
-    color: "0,134,255"
+    size: 150
+    position: "800,1500"
+    color: "20,206,219"
 fonts:
   - field: "attendee-type"
     font: "fonts/OpenSans-Bold.ttf"
-    size: 140
-    position: "270,1600"
+    size: 200
+    position: "700,3220"
+    # color: "0,255,255"
     color: "255,255,255"
     style: "capitals"
 pre-order-data-extend:
@@ -73,9 +75,9 @@ pre-order-data-extend:
 pre-order-data:
   - field: "Job Title"
     font: "fonts/OpenSans-Regular.ttf"
-    size: 50
+    size: 100
     style: "capitals"
-    position: "100, 600"
+    position: "800, 600"
     color: "207,19,19"
 # qr-code:
 #   status: "vcard"

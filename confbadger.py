@@ -11,6 +11,13 @@ import yaml
 from PIL import Image, ImageFile, ImageFont, ImageDraw
 import os
 from pdf2image import convert_from_path
+from PyPDF2 import PdfReader, PdfWriter
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter, A4
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.lib.colors import Color
+import io
 
 font = ImageFont.truetype("fonts/OpenSans-Bold.ttf", 140)
 font2 = ImageFont.truetype("fonts/OpenSans-Regular.ttf", 70)
@@ -54,6 +61,8 @@ def main():
                             help='Output format for badges. Default is pdf. Use png for maximum quality.')
     parser.add_argument('--pdf-dpi', type=int, default=600,
                             help='DPI for PDF template conversion. Higher values preserve more quality but increase processing time. Default is 600.')
+    parser.add_argument('--vector-mode', action="store_true",
+                            help='Use vector PDF processing to preserve original PDF quality. Text is overlaid as vector graphics.')
     args = parser.parse_args()
     # print(args)
     if args.debug:
@@ -91,15 +100,17 @@ def main():
                 config_file,
                 pre_order_data,
                 args.output_format,
-                args.pdf_dpi)
+                args.pdf_dpi,
+                args.vector_mode)
 
-def createBadge(template = "KCDAMS2023_Badge_Template.png",
+def createBadge(template = "a6.pdf",
                 save_path = "codes",
                 data_file = "data.csv",
                 config_file = "config.yaml", 
                 pre_order_data = None,
                 output_format = "pdf",
-                pdf_dpi = 600):
+                pdf_dpi = 300,
+                vector_mode = False):
     
     logger = logging.getLogger(__name__)
     logger.debug(f"template: {template}, save_path: {save_path}, data_file: {data_file}, config_file: {config_file}")
@@ -154,6 +165,21 @@ def createBadge(template = "KCDAMS2023_Badge_Template.png",
             elif img_base.mode != 'RGB':
                 img_base = img_base.convert('RGB')
             logger.debug(f"Handling {lastname}, {firstname} , {index}")
+            
+            # Check if we should use vector mode for PDF templates
+            if vector_mode and template.lower().endswith('.pdf') and output_format.lower() == 'pdf':
+                logger.debug("Using vector PDF processing mode")
+                badge_filename = f"badges/{lastname}_{firstname}_{order_number}.pdf"
+                
+                # Create vector PDF badge
+                success = create_vector_pdf_badge(template, values, config_data, badge_filename, save_path)
+                if success:
+                    badge_count += 1
+                    logger.debug(f"Saved vector PDF badge: {lastname}, {firstname}, {index}")
+                else:
+                    logger.error(f"Failed to create vector PDF badge for {lastname}, {firstname}")
+                continue
+            
             #logger.debug(f'QR Code status: {config_data["qr-code"]["status"]}')
             add_qr = False
             # Preserving default behaviour. If qr-code or the status is not defined the VCARD is added.        
@@ -338,6 +364,174 @@ def build_text(text, font_type, config_data):
 
 def str_to_tuple(position):
        return tuple(map(int, position.split(",")))
+
+def create_vector_pdf_badge(template_path, values, config_data, badge_filename, save_path, qr_data=None, qr_position=None):
+    """
+    Create a vector PDF badge by overlaying text on the original PDF template.
+    This preserves the vector quality of the original PDF.
+    """
+    logger = logging.getLogger(__name__)
+    
+    try:
+        # Read the original PDF template
+        template_reader = PdfReader(template_path)
+        template_page = template_reader.pages[0]
+        
+        # Get template page dimensions
+        page_width = float(template_page.mediabox.width)
+        page_height = float(template_page.mediabox.height)
+        
+        logger.debug(f"Template PDF dimensions: {page_width} x {page_height}")
+        
+        # Create a new PDF with the template as background
+        packet = io.BytesIO()
+        can = canvas.Canvas(packet, pagesize=(page_width, page_height))
+        
+        # Register fonts for vector text rendering
+        try:
+            pdfmetrics.registerFont(TTFont('OpenSans-Bold', 'fonts/OpenSans-Bold.ttf'))
+            pdfmetrics.registerFont(TTFont('OpenSans-Regular', 'fonts/OpenSans-Regular.ttf'))
+            pdfmetrics.registerFont(TTFont('OpenSans-Semibold', 'fonts/OpenSans-Semibold.ttf'))
+        except Exception as e:
+            logger.warning(f"Could not register fonts: {e}. Using default fonts.")
+        
+        # Draw text elements as vector graphics
+        for item in config_data.get("data", []):
+            field_name = item.get("field")
+            if field_name in values:
+                text = f'{values[field_name]}'
+                draw_vector_text(can, text, item, page_width, page_height)
+            else:
+                logger.debug(f"Field '{field_name}' not found in data, skipping")
+            
+        for item in config_data.get("labels", []):
+            text = f'{item.get("text")}'
+            draw_vector_text(can, text, item, page_width, page_height)
+        
+        # Handle pre-order data if available
+        if "pre-order-data" in config_data:
+            for item in config_data.get("pre-order-data", []):
+                field_name = item.get("field")
+                if field_name in values:
+                    text = f'{values[field_name]}'
+                    draw_vector_text(can, text, item, page_width, page_height)
+                else:
+                    logger.debug(f"Field '{field_name}' not found in data, skipping")
+        
+        # Draw attendee type
+        attendee_type = "attendee"
+        for attendee in config_data["attendee-types"]:
+            if values["Ticket title"] in attendee["ticket-titles"]:
+                attendee_type = attendee["name"]
+                break
+        
+        item = next((item for item in config_data["fonts"] if item.get("field") == "attendee-type"), None)
+        if item:
+            draw_vector_text(can, attendee_type, item, page_width, page_height)
+        
+        # Draw attendee type background line
+        color = str_to_tuple(next((item["color"] for item in config_data["attendee-types"] if item.get("name") == "Attendee"), None))
+        background_size = next((item["background-size"] for item in config_data["attendee-types"] if item.get("name") == "Attendee"), None)
+        
+        for attendee in config_data["attendee-types"]:
+            if values["Ticket title"] in attendee["ticket-titles"]:
+                color = str_to_tuple(attendee["color"])
+                background_size = attendee.get("background-size", 200)
+                break
+        
+        # Draw background line as vector
+        can.setStrokeColor(Color(color[0]/255.0, color[1]/255.0, color[2]/255.0))
+        can.setLineWidth(background_size)
+        can.line(0, background_size/2, page_width, background_size/2)
+        
+        can.save()
+        
+        # Move to the beginning of the StringIO buffer
+        packet.seek(0)
+        new_pdf = PdfReader(packet)
+        
+        # Create output PDF
+        output = PdfWriter()
+        
+        # Merge template page with text overlay
+        template_page.merge_page(new_pdf.pages[0])
+        output.add_page(template_page)
+        
+        # Write the result to file
+        with open(badge_filename, "wb") as output_file:
+            output.write(output_file)
+            
+        logger.debug(f"Created vector PDF badge: {badge_filename}")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error creating vector PDF badge: {str(e)}")
+        return False
+
+def draw_vector_text(canvas, text, item, page_width, page_height):
+    """
+    Draw text as vector graphics on the PDF canvas.
+    """
+    logger = logging.getLogger(__name__)
+    
+    try:
+        # Parse position
+        position = item.get("position")
+        if isinstance(position, str):
+            if "," in position:
+                x, y = map(float, position.split(","))
+            else:
+                x, y = 0, 0
+        else:
+            x, y = 0, 0
+        
+        # Handle middle positioning
+        if position == "middle" or (isinstance(position, str) and "middle" in position):
+            # Calculate text width for centering
+            font_name = get_reportlab_font_name(item.get("font"))
+            font_size = item.get("size", 12)
+            canvas.setFont(font_name, font_size)
+            text_width = canvas.stringWidth(text, font_name, font_size)
+            x = (page_width - text_width) / 2
+            if isinstance(position, str) and "," in position:
+                _, y = map(float, position.split(","))
+        
+        # Set font
+        font_name = get_reportlab_font_name(item.get("font"))
+        font_size = item.get("size", 12)
+        canvas.setFont(font_name, font_size)
+        
+        # Set color
+        color = str_to_tuple(item.get("color", "0,0,0"))
+        canvas.setFillColor(Color(color[0]/255.0, color[1]/255.0, color[2]/255.0))
+        
+        # Apply text style
+        if item.get("style") == "capitals":
+            text = text.upper()
+        
+        # Draw text
+        canvas.drawString(x, page_height - y, text)
+        
+    except Exception as e:
+        logger.error(f"Error drawing vector text: {str(e)}")
+
+def get_reportlab_font_name(font_path):
+    """
+    Convert font path to ReportLab font name.
+    """
+    if not font_path:
+        return "Helvetica"
+    
+    font_name = os.path.basename(font_path).replace('.ttf', '').replace('.otf', '')
+    
+    # Map common font names
+    font_mapping = {
+        'OpenSans-Bold': 'OpenSans-Bold',
+        'OpenSans-Regular': 'OpenSans-Regular', 
+        'OpenSans-Semibold': 'OpenSans-Semibold'
+    }
+    
+    return font_mapping.get(font_name, 'Helvetica')
 
 def load_template_image(template_path, pdf_dpi=600):
     """

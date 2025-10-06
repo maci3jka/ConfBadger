@@ -49,6 +49,8 @@ def main():
                             help='Scan sesults order list. ConfBadger produces a csv file of the results based on this.')
     parser.add_argument('--debug', action="store_true",
                             help='Print debug logs.')
+    parser.add_argument('--output-format', default="pdf", choices=["pdf", "png"],
+                            help='Output format for badges. Default is pdf. Use png for maximum quality.')
     args = parser.parse_args()
     # print(args)
     if args.debug:
@@ -84,13 +86,15 @@ def main():
                 save_path,
                 data_file,
                 config_file,
-                pre_order_data)
+                pre_order_data,
+                args.output_format)
 
 def createBadge(template = "KCDAMS2023_Badge_Template.png",
                 save_path = "codes",
                 data_file = "data.csv",
                 config_file = "config.yaml", 
-                pre_order_data = None):
+                pre_order_data = None,
+                output_format = "pdf"):
     
     logger = logging.getLogger(__name__)
     logger.debug(f"template: {template}, save_path: {save_path}, data_file: {data_file}, config_file: {config_file}")
@@ -132,7 +136,18 @@ def createBadge(template = "KCDAMS2023_Badge_Template.png",
             ticket_price_paid       = values["Ticket Price Paid"]
 
             ImageFile.LOAD_TRUNCATED_IMAGES = True
-            img_base = Image.open(template).convert("RGB")
+            # Preserve original image format and quality - don't convert to RGB unless necessary
+            img_base = Image.open(template)
+            # Only convert to RGB if the image has transparency and we need to paste opaque content
+            if img_base.mode in ('RGBA', 'LA') or (img_base.mode == 'P' and 'transparency' in img_base.info):
+                # Create a white background to preserve quality
+                background = Image.new('RGB', img_base.size, (255, 255, 255))
+                if img_base.mode == 'P':
+                    img_base = img_base.convert('RGBA')
+                background.paste(img_base, mask=img_base.split()[-1] if img_base.mode in ('RGBA', 'LA') else None)
+                img_base = background
+            elif img_base.mode != 'RGB':
+                img_base = img_base.convert('RGB')
             logger.debug(f"Handling {lastname}, {firstname} , {index}")
             #logger.debug(f'QR Code status: {config_data["qr-code"]["status"]}')
             add_qr = False
@@ -162,11 +177,14 @@ END:VCARD'''
                     qr_count += 1
                     
                     # Opening the secondary image (overlay image)
-                    img_qcode = Image.open(qr_filename).convert("RGB")
+                    img_qcode = Image.open(qr_filename)
+                    # Convert QR code to RGBA to handle transparency properly
+                    if img_qcode.mode != 'RGBA':
+                        img_qcode = img_qcode.convert('RGBA')
                     
                     # Pasting qrcode image on top of template image 
                     # starting at coordinates from the position conf parameter
-                    img_base.paste(img_qcode, str_to_tuple(config_data["qr-code"]["position"]))
+                    img_base.paste(img_qcode, str_to_tuple(config_data["qr-code"]["position"]), img_qcode)
 
             draw = ImageDraw.Draw(img_base)
             for item in config_data.get("data", []):
@@ -204,20 +222,23 @@ END:VCARD'''
 
             # Check if width-mm and height-mm exist
             if isinstance(size, dict) and "width-mm" in size and "height-mm" in size:
-                    out_width_px = int(config_data["size"]["width-mm"] / 10 / 2.54 * 300)
-                    out_heiht_px = int(config_data["size"]["height-mm"] / 10 / 2.54 * 300)
+                    # Use higher DPI for better quality (600 DPI instead of 300)
+                    target_dpi = 600
+                    out_width_px = int(config_data["size"]["width-mm"] / 10 / 2.54 * target_dpi)
+                    out_height_px = int(config_data["size"]["height-mm"] / 10 / 2.54 * target_dpi)
 
                     width_ratio = out_width_px / width
-                    height_ratio = out_heiht_px / height
+                    height_ratio = out_height_px / height
                     scale_factor = min(width_ratio, height_ratio)
-                    dpi = img_base.info.get("dpi", (1, 1))
+                    dpi = img_base.info.get("dpi", (72, 72))  # Default to 72 DPI if not specified
                     width_cm = (width / dpi[0]) * 2.54
                     height_cm = (height / dpi[1]) * 2.54
-                    logger.debug(f"Original image size {width}/{height}, {width_cm}/{height_cm} cm, dpi {dpi}")
-                    if width_ratio != 1 and height_ratio != 1:
+                    logger.debug(f"Original image size {width}/{height}, {width_cm:.2f}/{height_cm:.2f} cm, dpi {dpi}")
+                    if abs(width_ratio - 1) > 0.01 or abs(height_ratio - 1) > 0.01:  # Use small tolerance for floating point comparison
                             new_width = int(width * scale_factor)
                             new_height = int(height * scale_factor)
-                            logger.debug(f"Resizing from {width}/{height} to {new_width}/{new_height}")
+                            logger.debug(f"Resizing from {width}/{height} to {new_width}/{new_height} (scale: {scale_factor:.3f})")
+                            # Use LANCZOS for high-quality resizing
                             img_resized = img_base.resize((new_width, new_height), Image.LANCZOS)
                     else:
                             img_resized = img_base
@@ -227,9 +248,16 @@ END:VCARD'''
                    logger.debug("There is no size config, original base image size is used")
                    
             # Always save to the badges directory
-            badge_filename = f"badges/{lastname}_{firstname}_{order_number}.pdf"
-            img_resized.save(badge_filename, dpi=(300, 300))
-        #     img_resized.save(badge_filename)
+            badge_filename = f"badges/{lastname}_{firstname}_{order_number}.{output_format}"
+            # Use high DPI for better quality - preserve the target DPI used for resizing
+            save_dpi = (600, 600) if isinstance(size, dict) and "width-mm" in size and "height-mm" in size else (300, 300)
+            
+            if output_format.lower() == "png":
+                # Save as PNG for maximum quality (lossless)
+                img_resized.save(badge_filename, "PNG", dpi=save_dpi, optimize=False)
+            else:
+                # Save as PDF with high quality settings
+                img_resized.save(badge_filename, "PDF", dpi=save_dpi, quality=95, optimize=False)
             badge_count += 1
             logger.debug(f"Saved {lastname}, {firstname}, {index}")
             

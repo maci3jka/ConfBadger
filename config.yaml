@@ -1,84 +1,70 @@
 ---
+size:
+  width-mm: 3175
+  height-mm: 4763
+
 attendee-types:
   - name: "Speaker"
     color: "211, 165, 255"
     ticket-titles:
-      - "100.00% - KCDNL2023SPKR"
+      - "Speaker"
   - name: "Sponsor"
     color: "0, 152, 254"
     ticket-titles:
-      - "100.00% - KCDAMS23_MULTILAYER_FREE_RRTFS"
-      - "100.00% - KCDAMS23_AVISI_FREE_YUHTG"
-      - "100.00% - KCDAMS23_CIRCLECI_FREE_UIGHT"
-      - "100.00% - KCDAMS23_BUOYANT_FREE_AAXDC"
-      - "100.00% - KCDAMS23_ELASTIC_FREE_IJUHY"
-      - "100.00% - KCDAMS23_ATCOMP_FREE_RRTFS"
-      - "100.00% - KCDAMS23_FULLSTAQ_FREE_ASDCX"
-      - "100.00% - KCDAMS23_AKNOSTIC_FREE_UHYGJ"
-      - "100.00% - KCDAMS23_FIKAWORKS_FREE_YGVHS"
-      - "100.00% - KCDAMS23_ING_FREE_ASDCX"
-      - "100.00% - KCDAMS23_REDKUBES_FREE_VGBSD"
-      - "100.00% - KCDAMS23_FERMYON_FREE_GYHUT"
-      - "100.00% - KCDAMS23_DOIT_FREE_TYGGHF"
-      - "100.00% - KCDAMS23_RABO_FREE_BHNJK"
-      - "100.00% - KCDAMS23_A1_FREE_ASDCX"
-      - "100.00% - KCDAMS23_SPECTROCLOUD_FREE_GTCFS"
-      - "100.00% - KCDAMS23_SUSE_FREE_JJHGT"
-      - "100.00% - KCDAMS23_MIA_FREE_GYHUT"
-      - "100.00% - KCDAMS23_HCS_FREE_RRTFS"
-      - "100.00% - KCDAMS23_SOLO.IO_FREE_ASDCX"
-      - "100.00% - KCDAMS23_APPVIA_FREE_TYYGH"
-      - "100.00% - KCDAMS23_EDB_FREE_JAESR"
-      - "100.00% - KCDAMS23_EDGELESS_FREE_HUGYF"
+      - "Monday Support"
+      - "Elastic Support"
+      - "Akamai"
+      - "Monday Support"
+      - "Monday Support"
+      - "Monday Support"
+      - "Monday Support"
+      - "Monday Support"
 
   - name: "Organizer"
     color: "255, 109, 10"
     ticket-titles:
-      - "100.00% - KCDAMS23_ORGANIZERS_42"
-  - name: "Vip"
-    color: "255, 109, 10"
-    ticket-titles:
-      - "100.00% - KCDAMS23-WILLIAMFRIENDS"
-      - "100.00% - KCDAMS_LOVES_DODAMS"
-      - "100.00% - KCDAMS23-ANDYFRIENDS"
-  - name: "Student"
-    color: "159, 219, 255"
-    ticket-titles:
-      - "75.00% - STUDENTKCD75"
-      - "100.00% - KCDAMS_LOVES_DODAMS"
-      - "100.00% - KCDAMS23_CODAMFRIENDS"
+      - "Organizer"
+      - "asd"
   - name: "Attendee"
     color: "159, 219, 255"
-    background-size: 220
+    background-size: 200
     ticket-titles:
       - "None"
+      - "Monday"
+      - "Grafana"
+      - "Early Bird"
+      - "Akamai"
+      - "Elastic"
+      - "RedHat"
+      - "TestKube"
+      - "VirtusLab"
 data:
   - field: "First Name"
     font: "fonts/OpenSans-Bold.ttf"
-    size: 140
-    position: "100,400"
-    color: "207,19,19"
+    size: 120
+    position: "180,450"
+    color: "20,206,219"
     style: "capitals"
   - field: "Last Name"
     font: "fonts/OpenSans-Bold.ttf"
     size: 80
-    position: "100,600"
+    position: "180,620"
     color: "0,0,0"
   - field: "Title"
     font:  "fonts/OpenSans-Regular.ttf"
-    size: 70
-    position: "50,1050"
-    color: "207,19,19"
+    size: 60
+    position: "300,760"
+    color: "20,206,219"
   - field: "Company"
     font: "fonts/OpenSans-Semibold.ttf"
-    size: 80
-    position: "50,1150"
-    color: "20,206,219"
+    size: 70
+    position: "300,820"
+    color: "0,134,255"
 fonts:
   - field: "attendee-type"
     font: "fonts/OpenSans-Bold.ttf"
     size: 140
-    position: "270,1610"
+    position: "270,1600"
     color: "255,255,255"
     style: "capitals"
 pre-order-data-extend:
@@ -89,8 +75,8 @@ pre-order-data:
     font: "fonts/OpenSans-Regular.ttf"
     size: 50
     style: "capitals"
-    position: "100, 700"
+    position: "100, 600"
     color: "207,19,19"
-qr-code:
-  status: "vcard"
-  position: "70, 1300"
+# qr-code:
+#   status: "vcard"
+#   position: "850, 900"

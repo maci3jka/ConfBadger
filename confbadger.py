@@ -224,11 +224,12 @@ END:VCARD'''
                             logger.debug("Configured image size is the same as the base image.")
             else:
                    img_resized = img_base
-                   #logger.debug("There is no size config, original base image size is used")
+                   logger.debug("There is no size config, original base image size is used")
                    
             # Always save to the badges directory
             badge_filename = f"badges/{lastname}_{firstname}_{order_number}.pdf"
             img_resized.save(badge_filename, dpi=(300, 300))
+        #     img_resized.save(badge_filename)
             badge_count += 1
             logger.debug(f"Saved {lastname}, {firstname}, {index}")
             

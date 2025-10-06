@@ -10,6 +10,7 @@ import sys
 import yaml
 from PIL import Image, ImageFile, ImageFont, ImageDraw
 import os
+from pdf2image import convert_from_path
 
 font = ImageFont.truetype("fonts/OpenSans-Bold.ttf", 140)
 font2 = ImageFont.truetype("fonts/OpenSans-Regular.ttf", 70)
@@ -39,8 +40,8 @@ def main():
                             help='List of attendees in the CSV format as exported from Bevy. Default is data.csv')
     parser.add_argument('--save-path', default="./codes",
                             help='Path to save the generated badges. Default is ./codes')
-    parser.add_argument('--template', default="KCDAMS2023_Badge_Template.png",
-                            help='Template for the badges. Default is the example KCDAMS2023_Badge_Template.png file')
+    parser.add_argument('--template', default="a6.pdf",
+                            help='Template for the badges (PNG or PDF format). Default is the example KCDAMS2023_Badge_Template.png file')
     parser.add_argument('--config', default="config.yaml",
                             help='Config file. Default is config.yaml.')
     parser.add_argument('--pre-order-data',
@@ -51,6 +52,8 @@ def main():
                             help='Print debug logs.')
     parser.add_argument('--output-format', default="pdf", choices=["pdf", "png"],
                             help='Output format for badges. Default is pdf. Use png for maximum quality.')
+    parser.add_argument('--pdf-dpi', type=int, default=600,
+                            help='DPI for PDF template conversion. Higher values preserve more quality but increase processing time. Default is 600.')
     args = parser.parse_args()
     # print(args)
     if args.debug:
@@ -87,14 +90,16 @@ def main():
                 data_file,
                 config_file,
                 pre_order_data,
-                args.output_format)
+                args.output_format,
+                args.pdf_dpi)
 
 def createBadge(template = "KCDAMS2023_Badge_Template.png",
                 save_path = "codes",
                 data_file = "data.csv",
                 config_file = "config.yaml", 
                 pre_order_data = None,
-                output_format = "pdf"):
+                output_format = "pdf",
+                pdf_dpi = 600):
     
     logger = logging.getLogger(__name__)
     logger.debug(f"template: {template}, save_path: {save_path}, data_file: {data_file}, config_file: {config_file}")
@@ -136,8 +141,8 @@ def createBadge(template = "KCDAMS2023_Badge_Template.png",
             ticket_price_paid       = values["Ticket Price Paid"]
 
             ImageFile.LOAD_TRUNCATED_IMAGES = True
-            # Preserve original image format and quality - don't convert to RGB unless necessary
-            img_base = Image.open(template)
+            # Load template image (supports both PNG and PDF)
+            img_base = load_template_image(template, pdf_dpi)
             # Only convert to RGB if the image has transparency and we need to paste opaque content
             if img_base.mode in ('RGBA', 'LA') or (img_base.mode == 'P' and 'transparency' in img_base.info):
                 # Create a white background to preserve quality
@@ -256,8 +261,9 @@ END:VCARD'''
                 # Save as PNG for maximum quality (lossless)
                 img_resized.save(badge_filename, "PNG", dpi=save_dpi, optimize=False)
             else:
-                # Save as PDF with high quality settings
-                img_resized.save(badge_filename, "PDF", dpi=save_dpi, quality=95, optimize=False)
+                # Save as PDF with maximum quality settings
+                # Use quality=100 and compression=0 for best quality
+                img_resized.save(badge_filename, "PDF", dpi=save_dpi, quality=100, optimize=False, compression=0)
             badge_count += 1
             logger.debug(f"Saved {lastname}, {firstname}, {index}")
             
@@ -332,6 +338,31 @@ def build_text(text, font_type, config_data):
 
 def str_to_tuple(position):
        return tuple(map(int, position.split(",")))
+
+def load_template_image(template_path, pdf_dpi=600):
+    """
+    Load template image from PNG or PDF file.
+    Returns PIL Image object.
+    """
+    logger = logging.getLogger(__name__)
+    
+    if template_path.lower().endswith('.pdf'):
+        logger.debug(f"Loading PDF template: {template_path} at {pdf_dpi} DPI")
+        try:
+            # Convert PDF to image with configurable high DPI for maximum quality preservation
+            images = convert_from_path(template_path, dpi=pdf_dpi, first_page=1, last_page=1)
+            if images:
+                img = images[0]
+                logger.debug(f"PDF converted to image: {img.size}, mode: {img.mode}")
+                return img
+            else:
+                raise ValueError(f"Could not extract image from PDF: {template_path}")
+        except Exception as e:
+            logger.error(f"Error loading PDF template {template_path}: {str(e)}")
+            raise
+    else:
+        logger.debug(f"Loading image template: {template_path}")
+        return Image.open(template_path)
 
 def read_and_extend_data(data_file, pre_order_data, config_data):
         logger = logging.getLogger(__name__)

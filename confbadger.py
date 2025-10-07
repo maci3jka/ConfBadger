@@ -47,7 +47,7 @@ def main():
                             help='List of attendees in the CSV format as exported from Bevy. Default is data.csv')
     parser.add_argument('--save-path', default="./codes",
                             help='Path to save the generated badges. Default is ./codes')
-    parser.add_argument('--template', default="a6.pdf",
+    parser.add_argument('--template', default="a6_1.pdf",
                             help='Template for the badges (PNG or PDF format). Default is the example KCDAMS2023_Badge_Template.png file')
     parser.add_argument('--config', default="config.yaml",
                             help='Config file. Default is config.yaml.')
@@ -103,7 +103,7 @@ def main():
                 args.pdf_dpi,
                 args.vector_mode)
 
-def createBadge(template = "a6.pdf",
+def createBadge(template = "KCD-badge-front.png",
                 save_path = "codes",
                 data_file = "data.csv",
                 config_file = "config.yaml", 
@@ -197,10 +197,10 @@ VERSION:3.0
 END:VCARD'''
                     scale="4"
             elif config_data["qr-code"]["status"] == "hash":
-                    add_qr = True
+                    add_qr = False
                     data = f'{ticket_number}'
                     scale="10"
-            if add_qr:
+            if False:
                     # Create QR code
                     qr_filename = f"{save_path}/{lastname}_{firstname}_{ticket_number}.png"
                     qrcode = pyqrcode.create(unicodedata.normalize('NFKD', data).encode('ascii','ignore').decode('ascii'))

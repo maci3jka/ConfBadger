@@ -4,23 +4,29 @@ attendee-types:
     color: "211, 165, 255"
     ticket-titles:
       - "Speaker"
+
   - name: "Sponsor"
     color: "0, 152, 254"
     ticket-titles:
       - "Monday Support"
       - "Elastic Support"
-      - "Akamai"
+      - "Akamai Support"
+      - "VirtusLab Support"
+      - "Grafana Support"
+      - "RedHat Support"
+      - "TestKube Support"
       - "Monday Support"
       - "Monday Support"
-      - "Monday Support"
-      - "Monday Support"
-      - "Monday Support"
-
   - name: "Organizer"
     color: "255, 109, 10"
+    position: "600,3200"
     ticket-titles:
       - "Organizer"
       - "asd"
+  - name: "Volunteer"
+    color: "252, 189, 1"
+    ticket-titles:
+      - "Volunteer"
   - name: "Attendee"
     color: "159, 219, 255"
     background-size: 293
@@ -34,17 +40,20 @@ attendee-types:
       - "RedHat"
       - "TestKube"
       - "VirtusLab"
+      - "Regular"
+      - "Last Call"
+
 data:
   - field: "First Name"
     font: "fonts/OpenSans-Bold.ttf"
-    size: 300
-    position: "400,830"
+    size: 250
+    position: "330,830"
     color: "20,206,219"
     style: "capitals"
   - field: "Last Name"
     font: "fonts/OpenSans-Bold.ttf"
-    size: 150
-    position: "400,1220"
+    size: 170
+    position: "330,1220"
     color: "0,0,0"
   # - field: "Title"
   #   font:  "fonts/OpenSans-Regular.ttf"
@@ -59,13 +68,13 @@ data:
   - field: "Company"
     font: "fonts/OpenSans-Semibold.ttf"
     size: 150
-    position: "800,1500"
-    color: "20,206,219"
+    position: "330,1500"
+    color: "0, 134, 255"
 fonts:
   - field: "attendee-type"
     font: "fonts/OpenSans-Bold.ttf"
-    size: 200
-    position: "700,3220"
+    size: 220
+    position: "700,3200"
     # color: "0,255,255"
     color: "255,255,255"
     style: "capitals"
